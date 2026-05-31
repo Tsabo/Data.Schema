@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>SQLite provider for Tsabo.Data.Schema — schema reader, comparer, migrator, and validator for SQLite databases.</Description>
+  </PropertyGroup>
+
+  <ItemGroup Label="Package References">
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="MinVer" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Label="Project References">
+    <ProjectReference Include="..\Tsabo.Data.Schema\Tsabo.Data.Schema.csproj" />
+  </ItemGroup>
+</Project>

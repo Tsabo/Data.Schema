@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Entity Framework Core schema reader for Tsabo.Data.Schema. Reads a SchemaDefinition from any EF Core DbContext using provider-agnostic relational metadata.</Description>
+  </PropertyGroup>
+
+  <ItemGroup Label="Package References">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="MinVer" PrivateAssets="All" />
+  </ItemGroup>
+
+  <ItemGroup Label="Project References">
+    <ProjectReference Include="..\Tsabo.Data.Schema\Tsabo.Data.Schema.csproj" />
+  </ItemGroup>
+</Project>
