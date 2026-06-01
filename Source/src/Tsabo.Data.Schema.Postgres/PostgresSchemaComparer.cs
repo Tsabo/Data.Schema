@@ -4,8 +4,9 @@ namespace Tsabo.Data.Schema.Postgres;
 
 public sealed class PostgresSchemaComparer : ISchemaComparer
 {
-    public SchemaDiff Compare(SchemaDefinition current, SchemaDefinition target)
+    public SchemaDiff Compare(SchemaDefinition current, SchemaDefinition target, SchemaOptions? options = null)
     {
+        options ??= new SchemaOptions();
         var diff = new SchemaDiff();
 
         var currentTables = current.Tables.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
@@ -20,6 +21,7 @@ public sealed class PostgresSchemaComparer : ISchemaComparer
                     Type = MigrationOperationType.CreateTable,
                     TableName = table.Name,
                     Sql = GenerateCreateTableSql(table),
+                    IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                 });
 
                 foreach (var item in table.Indexes)
@@ -30,6 +32,7 @@ public sealed class PostgresSchemaComparer : ISchemaComparer
                         TableName = table.Name,
                         IndexName = item.Name,
                         Sql = GenerateCreateIndexSql(table.Name, item),
+                        IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                     });
                 }
 
@@ -40,6 +43,7 @@ public sealed class PostgresSchemaComparer : ISchemaComparer
                         Type = MigrationOperationType.AddForeignKey,
                         TableName = table.Name,
                         Sql = GenerateAddForeignKeySql(table.Name, item),
+                        IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                     });
                 }
             }
@@ -56,6 +60,8 @@ public sealed class PostgresSchemaComparer : ISchemaComparer
                             TableName = table.Name,
                             ColumnName = item.Name,
                             Sql = GenerateAddColumnSql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase)
+                                        || options.IgnoredColumns.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                     else if (!string.Equals(NormalizeType(currentCol.Type), NormalizeType(item.Type), StringComparison.OrdinalIgnoreCase))
@@ -66,6 +72,8 @@ public sealed class PostgresSchemaComparer : ISchemaComparer
                             TableName = table.Name,
                             ColumnName = item.Name,
                             Sql = GenerateAlterColumnSql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase)
+                                        || options.IgnoredColumns.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                 }
@@ -81,6 +89,7 @@ public sealed class PostgresSchemaComparer : ISchemaComparer
                             TableName = table.Name,
                             IndexName = item.Name,
                             Sql = GenerateCreateIndexSql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                 }
@@ -96,6 +105,7 @@ public sealed class PostgresSchemaComparer : ISchemaComparer
                     Type = MigrationOperationType.DropTable,
                     TableName = item.Name,
                     Sql = $"DROP TABLE IF EXISTS \"{item.Name}\" CASCADE;",
+                    IsIgnored = options.IgnoredTables.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                 });
             }
         }

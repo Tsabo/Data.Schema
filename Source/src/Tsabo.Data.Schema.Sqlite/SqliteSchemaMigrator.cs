@@ -30,7 +30,7 @@ public sealed class SqliteSchemaMigrator : ISchemaMigrator
         var context = new MigrationContext { Diff = diff, Options = options };
         var warnings = new List<string>();
 
-        foreach (var item in diff.Operations.Where(p => p.Warning is not null))
+        foreach (var item in diff.Operations.Where(p => p.Warning is not null && !p.IsIgnored))
             warnings.Add(item.Warning!);
 
         if (options.DryRun)
@@ -45,7 +45,7 @@ public sealed class SqliteSchemaMigrator : ISchemaMigrator
 
         try
         {
-            foreach (var item in diff.Operations)
+            foreach (var item in diff.Operations.Where(p => !p.IsIgnored))
             {
                 if (string.IsNullOrWhiteSpace(item.Sql))
                     continue;

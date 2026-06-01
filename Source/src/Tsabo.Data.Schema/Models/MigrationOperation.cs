@@ -8,4 +8,5 @@ public class MigrationOperation
     public string? IndexName { get; set; }
     public string Sql { get; set; } = string.Empty;
     public string? Warning { get; set; }
+    public bool IsIgnored { get; set; }
 }

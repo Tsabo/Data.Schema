@@ -4,8 +4,9 @@ namespace Tsabo.Data.Schema.Sqlite;
 
 public sealed class SqliteSchemaComparer : ISchemaComparer
 {
-    public SchemaDiff Compare(SchemaDefinition current, SchemaDefinition target)
+    public SchemaDiff Compare(SchemaDefinition current, SchemaDefinition target, SchemaOptions? options = null)
     {
+        options ??= new SchemaOptions();
         var diff = new SchemaDiff();
 
         var currentTables = current.Tables.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
@@ -20,6 +21,7 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
                     Type = MigrationOperationType.CreateTable,
                     TableName = table.Name,
                     Sql = GenerateCreateTableSql(table),
+                    IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                 });
 
                 foreach (var item in table.Indexes)
@@ -30,6 +32,7 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
                         TableName = table.Name,
                         IndexName = item.Name,
                         Sql = GenerateCreateIndexSql(table.Name, item),
+                        IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                     });
                 }
             }
@@ -46,6 +49,8 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
                             TableName = table.Name,
                             ColumnName = item.Name,
                             Sql = GenerateAddColumnSql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase)
+                                        || options.IgnoredColumns.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                     else if (!string.Equals(currentCol.Type, item.Type, StringComparison.OrdinalIgnoreCase))
@@ -57,6 +62,8 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
                             ColumnName = item.Name,
                             Sql = string.Empty,
                             Warning = $"SQLite does not support ALTER COLUMN. Column '{table.Name}.{item.Name}' type change from '{currentCol.Type}' to '{item.Type}' requires a table rebuild.",
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase)
+                                        || options.IgnoredColumns.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                 }
@@ -72,6 +79,7 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
                             TableName = table.Name,
                             IndexName = item.Name,
                             Sql = GenerateCreateIndexSql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                 }
@@ -87,6 +95,7 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
                     Type = MigrationOperationType.DropTable,
                     TableName = item.Name,
                     Sql = $"DROP TABLE IF EXISTS \"{item.Name}\";",
+                    IsIgnored = options.IgnoredTables.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                 });
             }
         }

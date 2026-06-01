@@ -4,8 +4,9 @@ namespace Tsabo.Data.Schema.SqlServer;
 
 public sealed class SqlServerSchemaComparer : ISchemaComparer
 {
-    public SchemaDiff Compare(SchemaDefinition current, SchemaDefinition target)
+    public SchemaDiff Compare(SchemaDefinition current, SchemaDefinition target, SchemaOptions? options = null)
     {
+        options ??= new SchemaOptions();
         var diff = new SchemaDiff();
 
         var currentTables = current.Tables.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
@@ -20,6 +21,7 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                     Type = MigrationOperationType.CreateTable,
                     TableName = table.Name,
                     Sql = GenerateCreateTableSql(table),
+                    IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                 });
 
                 foreach (var item in table.Indexes)
@@ -30,6 +32,7 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                         TableName = table.Name,
                         IndexName = item.Name,
                         Sql = GenerateCreateIndexSql(table.Name, item),
+                        IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                     });
                 }
 
@@ -40,6 +43,7 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                         Type = MigrationOperationType.AddForeignKey,
                         TableName = table.Name,
                         Sql = GenerateAddForeignKeySql(table.Name, item),
+                        IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                     });
                 }
             }
@@ -56,6 +60,8 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                             TableName = table.Name,
                             ColumnName = item.Name,
                             Sql = GenerateAddColumnSql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase)
+                                        || options.IgnoredColumns.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                     else if (!string.Equals(currentCol.Type, item.Type, StringComparison.OrdinalIgnoreCase))
@@ -66,6 +72,8 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                             TableName = table.Name,
                             ColumnName = item.Name,
                             Sql = GenerateAlterColumnSql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase)
+                                        || options.IgnoredColumns.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                 }
@@ -81,6 +89,7 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                             TableName = table.Name,
                             IndexName = item.Name,
                             Sql = GenerateCreateIndexSql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
                         });
                     }
                 }
@@ -96,6 +105,7 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                     Type = MigrationOperationType.DropTable,
                     TableName = item.Name,
                     Sql = $"DROP TABLE IF EXISTS [{item.Name}];",
+                    IsIgnored = options.IgnoredTables.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
                 });
             }
         }
@@ -156,13 +166,19 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
 
     private static string GenerateAlterColumnSql(string tableName, ColumnDefinition col)
     {
-        var nullability = col.IsNullable ? "NULL" : "NOT NULL";
+        var nullability = col.IsNullable
+            ? "NULL"
+            : "NOT NULL";
+
         return $"ALTER TABLE [{tableName}] ALTER COLUMN [{col.Name}] {col.Type} {nullability};";
     }
 
     private static string GenerateCreateIndexSql(string tableName, IndexDefinition index)
     {
-        var unique = index.IsUnique ? "UNIQUE " : string.Empty;
+        var unique = index.IsUnique
+            ? "UNIQUE "
+            : string.Empty;
+
         var cols = string.Join(", ", index.Columns.Select(p => $"[{p}]"));
         return $"CREATE {unique}INDEX [{index.Name}] ON [{tableName}] ({cols});";
     }
@@ -180,7 +196,7 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
             "BIT" => "0",
             "DATETIME" or "DATETIME2" or "DATE" or "TIME" or "DATETIMEOFFSET" => "GETUTCDATE()",
             "UNIQUEIDENTIFIER" => "NEWID()",
-            _ => "''",
+            var _ => "''",
         };
     }
 }

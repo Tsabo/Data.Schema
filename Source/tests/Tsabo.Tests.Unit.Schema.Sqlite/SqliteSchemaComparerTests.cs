@@ -207,4 +207,98 @@ public class SqliteSchemaComparerTests
 
         await Assert.That(diff.Operations.Count).IsGreaterThanOrEqualTo(3);
     }
+
+    [Test]
+    public async Task Compare_IgnoredTable_AllOperationsMarkedIgnored()
+    {
+        var current = new SchemaDefinition();
+        var target = new SchemaDefinition
+        {
+            Tables =
+            [
+                new TableDefinition
+                {
+                    Name = "Logs",
+                    Columns = [new ColumnDefinition { Name = "Id", Type = "INTEGER", IsPrimaryKey = true }],
+                    Indexes = [new IndexDefinition { Name = "IX_Logs_Id", Columns = ["Id"] }],
+                },
+            ],
+        };
+
+        var options = new SchemaOptions { IgnoredTables = ["Logs"] };
+        var diff = _comparer.Compare(current, target, options);
+
+        await Assert.That(diff.Operations).Count().IsGreaterThan(0);
+        await Assert.That(diff.Operations.All(p => p.IsIgnored)).IsTrue();
+        await Assert.That(diff.HasChanges).IsFalse();
+    }
+
+    [Test]
+    public async Task Compare_IgnoredColumn_OperationMarkedIgnored()
+    {
+        var current = new SchemaDefinition
+        {
+            Tables =
+            [
+                new TableDefinition
+                {
+                    Name = "Users",
+                    Columns = [new ColumnDefinition { Name = "Id", Type = "INTEGER", IsPrimaryKey = true }],
+                },
+            ],
+        };
+
+        var target = new SchemaDefinition
+        {
+            Tables =
+            [
+                new TableDefinition
+                {
+                    Name = "Users",
+                    Columns =
+                    [
+                        new ColumnDefinition { Name = "Id", Type = "INTEGER", IsPrimaryKey = true },
+                        new ColumnDefinition { Name = "CreatedAt", Type = "TEXT" },
+                    ],
+                },
+            ],
+        };
+
+        var options = new SchemaOptions { IgnoredColumns = ["CreatedAt"] };
+        var diff = _comparer.Compare(current, target, options);
+
+        await Assert.That(diff.Operations).Count().IsEqualTo(1);
+        await Assert.That(diff.Operations[0].ColumnName).IsEqualTo("CreatedAt");
+        await Assert.That(diff.Operations[0].IsIgnored).IsTrue();
+        await Assert.That(diff.HasChanges).IsFalse();
+    }
+
+    [Test]
+    public async Task Compare_MixedIgnoredAndNonIgnored_HasChangesIsTrue()
+    {
+        var current = new SchemaDefinition();
+        var target = new SchemaDefinition
+        {
+            Tables =
+            [
+                new TableDefinition
+                {
+                    Name = "Logs",
+                    Columns = [new ColumnDefinition { Name = "Id", Type = "INTEGER", IsPrimaryKey = true }],
+                },
+                new TableDefinition
+                {
+                    Name = "Users",
+                    Columns = [new ColumnDefinition { Name = "Id", Type = "INTEGER", IsPrimaryKey = true }],
+                },
+            ],
+        };
+
+        var options = new SchemaOptions { IgnoredTables = ["Logs"] };
+        var diff = _comparer.Compare(current, target, options);
+
+        await Assert.That(diff.Operations.Any(p => p.IsIgnored)).IsTrue();
+        await Assert.That(diff.Operations.Any(p => !p.IsIgnored)).IsTrue();
+        await Assert.That(diff.HasChanges).IsTrue();
+    }
 }
