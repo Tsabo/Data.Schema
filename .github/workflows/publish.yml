@@ -37,6 +37,12 @@ jobs:
       - name: Test (SQL Server)
         run: dotnet run --project Source/tests/Tsabo.Tests.Unit.Schema.SqlServer/Tsabo.Tests.Unit.Schema.SqlServer.csproj --no-build --configuration Release
 
+      - name: Test Integration (PostgreSQL)
+        run: dotnet run --project Source/tests/Tsabo.Tests.Integration.Schema.Postgres/Tsabo.Tests.Integration.Schema.Postgres.csproj --no-build --configuration Release
+
+      - name: Test Integration (SQL Server)
+        run: dotnet run --project Source/tests/Tsabo.Tests.Integration.Schema.SqlServer/Tsabo.Tests.Integration.Schema.SqlServer.csproj --no-build --configuration Release
+
       - name: Pack
         run: dotnet pack Source/Tsabo.Data.Schema.slnx --no-build --configuration Release --output ./nupkgs
 

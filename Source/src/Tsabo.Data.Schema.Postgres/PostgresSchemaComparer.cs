@@ -193,7 +193,7 @@ public sealed class PostgresSchemaComparer : ISchemaComparer
                 "INTEGER" or "INT" or "INT4" => "SERIAL",
                 "BIGINT" or "INT8" => "BIGSERIAL",
                 "SMALLINT" or "INT2" => "SMALLSERIAL",
-                var _ => "SERIAL",
+                var _ => col.Type,
             };
         }
 

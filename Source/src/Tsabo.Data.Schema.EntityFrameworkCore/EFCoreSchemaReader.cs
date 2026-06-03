@@ -37,7 +37,8 @@ public sealed class EFCoreSchemaReader(DbContext context) : ISchemaReader
                     IsNullable = item.IsNullable,
                     IsPrimaryKey = item.IsPrimaryKey(),
                     IsAutoIncrement = item.ValueGenerated is not ValueGenerated.Never
-                                      && item.IsPrimaryKey(),
+                                      && item.IsPrimaryKey()
+                                      && IsIntegerType(item.ClrType),
                     DefaultValue = item.GetDefaultValueSql(),
                     OrdinalPosition = ordinal++,
                 };
@@ -87,5 +88,11 @@ public sealed class EFCoreSchemaReader(DbContext context) : ISchemaReader
         }
 
         return Task.FromResult(schema);
+    }
+
+    private static bool IsIntegerType(Type type)
+    {
+        var t = Nullable.GetUnderlyingType(type) ?? type;
+        return t == typeof(int) || t == typeof(long) || t == typeof(short) || t == typeof(byte);
     }
 }
