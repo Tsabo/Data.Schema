@@ -15,6 +15,7 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <NuGetAudit>true</NuGetAudit>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' != 'false'">
