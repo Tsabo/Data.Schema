@@ -112,7 +112,7 @@ public class SqliteSchemaComparerTests
     }
 
     [Test]
-    public async Task Compare_RemovedTableInTarget_GeneratesDropTable()
+    public async Task Compare_TableOnlyInCurrent_GeneratesNoOperations()
     {
         var current = new SchemaDefinition
         {
@@ -121,7 +121,8 @@ public class SqliteSchemaComparerTests
 
         var diff = _comparer.Compare(current, new SchemaDefinition());
 
-        await Assert.That(diff.Operations[0].Type).IsEqualTo(MigrationOperationType.DropTable);
+        await Assert.That(diff.HasChanges).IsFalse();
+        await Assert.That(diff.Operations).IsEmpty();
     }
 
     [Test]

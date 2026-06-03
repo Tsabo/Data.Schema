@@ -10,7 +10,6 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
         var diff = new SchemaDiff();
 
         var currentTables = current.Tables.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
-        var targetTables = target.Tables.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
 
         foreach (var table in target.Tables)
         {
@@ -83,20 +82,6 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
                         });
                     }
                 }
-            }
-        }
-
-        foreach (var item in current.Tables)
-        {
-            if (!targetTables.ContainsKey(item.Name))
-            {
-                diff.Operations.Add(new MigrationOperation
-                {
-                    Type = MigrationOperationType.DropTable,
-                    TableName = item.Name,
-                    Sql = $"DROP TABLE IF EXISTS \"{item.Name}\";",
-                    IsIgnored = options.IgnoredTables.Contains(item.Name, StringComparer.OrdinalIgnoreCase),
-                });
             }
         }
 
