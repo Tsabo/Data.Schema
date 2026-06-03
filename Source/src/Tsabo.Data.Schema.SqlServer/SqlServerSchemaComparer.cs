@@ -10,17 +10,20 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
         var diff = new SchemaDiff();
 
         var currentTables = current.Tables.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+        var pendingForeignKeys = new List<MigrationOperation>();
 
         foreach (var table in target.Tables)
         {
             if (!currentTables.TryGetValue(table.Name, out var currentTable))
             {
+                var isIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase);
+
                 diff.Operations.Add(new MigrationOperation
                 {
                     Type = MigrationOperationType.CreateTable,
                     TableName = table.Name,
                     Sql = GenerateCreateTableSql(table),
-                    IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
+                    IsIgnored = isIgnored,
                 });
 
                 foreach (var item in table.Indexes)
@@ -31,18 +34,18 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                         TableName = table.Name,
                         IndexName = item.Name,
                         Sql = GenerateCreateIndexSql(table.Name, item),
-                        IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
+                        IsIgnored = isIgnored,
                     });
                 }
 
                 foreach (var item in table.ForeignKeys)
                 {
-                    diff.Operations.Add(new MigrationOperation
+                    pendingForeignKeys.Add(new MigrationOperation
                     {
                         Type = MigrationOperationType.AddForeignKey,
                         TableName = table.Name,
                         Sql = GenerateAddForeignKeySql(table.Name, item),
-                        IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
+                        IsIgnored = isIgnored,
                     });
                 }
             }
@@ -92,8 +95,25 @@ public sealed class SqlServerSchemaComparer : ISchemaComparer
                         });
                     }
                 }
+
+                var currentForeignKeys = currentTable.ForeignKeys.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+                foreach (var item in table.ForeignKeys)
+                {
+                    if (!currentForeignKeys.ContainsKey(item.Name))
+                    {
+                        pendingForeignKeys.Add(new MigrationOperation
+                        {
+                            Type = MigrationOperationType.AddForeignKey,
+                            TableName = table.Name,
+                            Sql = GenerateAddForeignKeySql(table.Name, item),
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
+                        });
+                    }
+                }
             }
         }
+
+        diff.Operations.AddRange(pendingForeignKeys);
 
         return diff;
     }

@@ -82,6 +82,22 @@ public sealed class SqliteSchemaComparer : ISchemaComparer
                         });
                     }
                 }
+
+                var currentForeignKeys = currentTable.ForeignKeys.ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
+                foreach (var item in table.ForeignKeys)
+                {
+                    if (!currentForeignKeys.ContainsKey(item.Name))
+                    {
+                        diff.Operations.Add(new MigrationOperation
+                        {
+                            Type = MigrationOperationType.AddForeignKey,
+                            TableName = table.Name,
+                            Sql = string.Empty,
+                            Warning = $"SQLite does not support ADD CONSTRAINT. Foreign key '{item.Name}' on '{table.Name}' requires a table rebuild.",
+                            IsIgnored = options.IgnoredTables.Contains(table.Name, StringComparer.OrdinalIgnoreCase),
+                        });
+                    }
+                }
             }
         }
 
