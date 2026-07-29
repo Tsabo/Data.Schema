@@ -15,6 +15,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Tsabo.Tests.Unit.Schema.Sqlite/Tsabo.Tests.Unit.Schema.Sqlite.csproj" />
     <Project Path="tests/Tsabo.Tests.Unit.Schema.SqlServer/Tsabo.Tests.Unit.Schema.SqlServer.csproj" />
+    <Project Path="tests/Tsabo.Tests.Unit.Schema.EntityFrameworkCore/Tsabo.Tests.Unit.Schema.EntityFrameworkCore.csproj" />
     <Project Path="tests/Tsabo.Tests.Unit.Schema.Postgres/Tsabo.Tests.Unit.Schema.Postgres.csproj" />
     <Project Path="tests/Tsabo.Tests.Integration.Schema.Postgres/Tsabo.Tests.Integration.Schema.Postgres.csproj" />
     <Project Path="tests/Tsabo.Tests.Integration.Schema.SqlServer/Tsabo.Tests.Integration.Schema.SqlServer.csproj" />

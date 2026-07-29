@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsTestingPlatformApplication>true</IsTestingPlatformApplication>
+    <TestingPlatformCaptureOutput>false</TestingPlatformCaptureOutput>
+    <IsTestProject>true</IsTestProject>
+    <UseTestingPlatformProtocol>true</UseTestingPlatformProtocol>
+    <IsTestingPlatformEnabled>true</IsTestingPlatformEnabled>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA2000;CA2201;CS8604;CS8892</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup Label="Using Directives">
+    <Using Include="TUnit.Core" />
+    <Using Include="TUnit.Assertions" />
+    <Using Include="TUnit.Assertions.Extensions" />
+  </ItemGroup>
+
+  <ItemGroup Label="Package References">
+    <PackageReference Include="TUnit" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+  </ItemGroup>
+
+  <ItemGroup Label="Project References">
+    <ProjectReference Include="..\..\src\Tsabo.Data.Schema.EntityFrameworkCore\Tsabo.Data.Schema.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\Tsabo.Data.Schema.SqlServer\Tsabo.Data.Schema.SqlServer.csproj" />
+  </ItemGroup>
+</Project>

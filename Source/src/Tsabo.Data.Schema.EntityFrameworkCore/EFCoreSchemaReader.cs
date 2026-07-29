@@ -16,96 +16,70 @@ public sealed class EFCoreSchemaReader(DbContext context) : ISchemaReader
         var model = context.GetService<IDesignTimeModel>().Model;
         var schema = new SchemaDefinition();
 
-        // Owned types using table splitting (e.g. OwnsOne without a distinct ToTable, as used by
-        // ASP.NET Core Identity's passkey "Data" owned type) produce a separate IEntityType that
-        // maps to the *same* table name as their owner. Group by table so each table is emitted once.
-        var tablesByName = model.GetEntityTypes()
-            .Select(entityType => (EntityType: entityType, TableName: entityType.GetTableName()))
-            .Where(p => p.TableName is not null)
-            .GroupBy(p => p.TableName!, StringComparer.OrdinalIgnoreCase);
-
-        foreach (var tableGroup in tablesByName)
+        // The relational model (as opposed to walking IModel.GetEntityTypes() directly) already
+        // resolves each physical table exactly once, with its real columns. This is what makes it
+        // correct for the cases that break a naive per-entity-type walk: owned types using table
+        // splitting (e.g. no distinct ToTable) share their owner's table and would otherwise be read
+        // twice; owned types mapped to a single JSON column (e.g. ASP.NET Core Identity's passkey
+        // "Data" column under SchemaVersion 3) have properties with no column of their own at all; and
+        // the ownership foreign key linking a split/JSON-mapped owned type back to its owner is an
+        // internal modeling detail, not a real table-to-table relationship - the relational model
+        // doesn't surface it as a ForeignKeyConstraint.
+        foreach (var table in model.GetRelationalModel().Tables)
         {
-            var tableName = tableGroup.Key;
-            var table = new TableDefinition { Name = tableName };
+            if (table.IsExcludedFromMigrations)
+                continue;
+
+            var tableDefinition = new TableDefinition { Name = table.Name };
+            var primaryKeyColumns = table.PrimaryKey?.Columns;
             var ordinal = 0;
 
-            foreach (var entityType in tableGroup.Select(p => p.EntityType))
+            foreach (var column in table.Columns)
             {
-                var storeObjectId = StoreObjectIdentifier.Table(tableName, entityType.GetSchema());
+                var property = column.PropertyMappings.FirstOrDefault()?.Property;
+                var isPrimaryKey = primaryKeyColumns?.Contains(column) ?? false;
 
-                foreach (var item in entityType.GetProperties())
+                tableDefinition.Columns.Add(new ColumnDefinition
                 {
-                    var columnName = item.GetColumnName(storeObjectId) ?? item.Name;
+                    Name = column.Name,
+                    // StoreType returns the actual provider-specific SQL type.
+                    Type = column.StoreType,
+                    IsNullable = column.IsNullable,
+                    IsPrimaryKey = isPrimaryKey,
+                    IsAutoIncrement = isPrimaryKey
+                                      && property is not null
+                                      && property.ValueGenerated is not ValueGenerated.Never
+                                      && IsIntegerType(property.ClrType),
+                    DefaultValue = column.DefaultValueSql,
+                    OrdinalPosition = ordinal++
+                });
+            }
 
-                    if (table.Columns.Any(p => p.Name == columnName))
-                        continue;
-
-                    var column = new ColumnDefinition
-                    {
-                        Name = columnName,
-                        // GetRelationalTypeMapping().StoreType returns the actual provider-specific SQL type.
-                        Type = item.GetRelationalTypeMapping().StoreType,
-                        IsNullable = item.IsNullable,
-                        IsPrimaryKey = item.IsPrimaryKey(),
-                        IsAutoIncrement = item.ValueGenerated is not ValueGenerated.Never
-                                          && item.IsPrimaryKey()
-                                          && IsIntegerType(item.ClrType),
-                        DefaultValue = item.GetDefaultValueSql(),
-                        OrdinalPosition = ordinal++
-                    };
-
-                    table.Columns.Add(column);
-                }
-
-                foreach (var item in entityType.GetIndexes())
+            foreach (var index in table.Indexes)
+            {
+                tableDefinition.Indexes.Add(new IndexDefinition
                 {
-                    var storeIndex = item.GetDatabaseName();
+                    Name = index.Name,
+                    Columns = index.Columns.Select(c => c.Name).ToList(),
+                    IsUnique = index.IsUnique
+                });
+            }
 
-                    if (storeIndex is null || table.Indexes.Any(p => p.Name == storeIndex))
-                        continue;
-
-                    table.Indexes.Add(new IndexDefinition
+            foreach (var fk in table.ForeignKeyConstraints)
+            {
+                for (var i = 0; i < fk.Columns.Count; i++)
+                {
+                    tableDefinition.ForeignKeys.Add(new ForeignKeyDefinition
                     {
-                        Name = storeIndex,
-                        Columns = item.Properties.Select(p => p.GetColumnName(storeObjectId) ?? p.Name).ToList(),
-                        IsUnique = item.IsUnique
+                        Name = fk.Name,
+                        Column = fk.Columns[i].Name,
+                        ReferencedTable = fk.PrincipalTable.Name,
+                        ReferencedColumn = fk.PrincipalColumns[i].Name
                     });
-                }
-
-                foreach (var item in entityType.GetForeignKeys())
-                {
-                    var fkConstraint = item.GetConstraintName();
-
-                    if (fkConstraint is null)
-                        continue;
-
-                    var principalTable = item.PrincipalEntityType.GetTableName();
-
-                    if (principalTable is null)
-                        continue;
-
-                    var principalStoreObject = StoreObjectIdentifier.Table(principalTable, item.PrincipalEntityType.GetSchema());
-
-                    for (var i = 0; i < item.Properties.Count; i++)
-                    {
-                        var columnName = item.Properties[i].GetColumnName(storeObjectId) ?? item.Properties[i].Name;
-
-                        if (table.ForeignKeys.Any(p => p.Name == fkConstraint && p.Column == columnName))
-                            continue;
-
-                        table.ForeignKeys.Add(new ForeignKeyDefinition
-                        {
-                            Name = fkConstraint,
-                            Column = columnName,
-                            ReferencedTable = principalTable,
-                            ReferencedColumn = item.PrincipalKey.Properties[i].GetColumnName(principalStoreObject) ?? item.PrincipalKey.Properties[i].Name
-                        });
-                    }
                 }
             }
 
-            schema.Tables.Add(table);
+            schema.Tables.Add(tableDefinition);
         }
 
         return Task.FromResult(schema);
