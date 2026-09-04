@@ -23,6 +23,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Generate graph
+        uses: Tsabo/nugraph-action@master
+        with:
+          project-path: ./Source/Tsabo.Data.Schema.slnx
+          job-summary: 'true'
+          dotnet-version: '10.0.x'
+          hide-empty-graphs: 'true'
+          title: ''
+        
       - name: Restore
         run: dotnet restore Source/Tsabo.Data.Schema.slnx
 
