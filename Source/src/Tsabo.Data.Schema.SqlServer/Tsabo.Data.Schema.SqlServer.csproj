@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>SQL Server provider for Tsabo.Data.Schema — schema reader, comparer, migrator, and validator for SQL Server databases.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
   
   <ItemGroup Label="Package References">

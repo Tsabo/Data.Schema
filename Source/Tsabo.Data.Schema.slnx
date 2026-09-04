@@ -20,4 +20,7 @@
     <Project Path="tests/Tsabo.Tests.Integration.Schema.Postgres/Tsabo.Tests.Integration.Schema.Postgres.csproj" />
     <Project Path="tests/Tsabo.Tests.Integration.Schema.SqlServer/Tsabo.Tests.Integration.Schema.SqlServer.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Tsabo.Data.Schema.AotSample/Tsabo.Data.Schema.AotSample.csproj" />
+  </Folder>
 </Solution>

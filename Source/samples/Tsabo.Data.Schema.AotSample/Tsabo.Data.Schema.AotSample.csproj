@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Sample console app that Native AOT-publishes Tsabo.Data.Schema and its providers end-to-end, to verify AOT compatibility.</Description>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+
+  <ItemGroup Label="Package References">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup Label="Project References">
+    <ProjectReference Include="..\..\src\Tsabo.Data.Schema\Tsabo.Data.Schema.csproj" />
+    <ProjectReference Include="..\..\src\Tsabo.Data.Schema.EntityFrameworkCore\Tsabo.Data.Schema.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\Tsabo.Data.Schema.Postgres\Tsabo.Data.Schema.Postgres.csproj" />
+    <ProjectReference Include="..\..\src\Tsabo.Data.Schema.Sqlite\Tsabo.Data.Schema.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\Tsabo.Data.Schema.SqlServer\Tsabo.Data.Schema.SqlServer.csproj" />
+  </ItemGroup>
+</Project>

@@ -37,3 +37,9 @@ jobs:
 
       - name: Test (SQL Server)
         run: dotnet run --project Source/tests/Tsabo.Tests.Unit.Schema.SqlServer/Tsabo.Tests.Unit.Schema.SqlServer.csproj --no-build --configuration Release
+
+      - name: Publish AOT sample
+        run: dotnet publish Source/samples/Tsabo.Data.Schema.AotSample/Tsabo.Data.Schema.AotSample.csproj --configuration Release --runtime linux-x64
+
+      - name: Run AOT sample
+        run: Source/samples/Tsabo.Data.Schema.AotSample/bin/Release/net10.0/linux-x64/publish/Tsabo.Data.Schema.AotSample

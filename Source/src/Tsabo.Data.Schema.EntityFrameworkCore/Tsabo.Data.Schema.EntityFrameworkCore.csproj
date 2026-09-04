@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>Entity Framework Core schema reader for Tsabo.Data.Schema. Reads a SchemaDefinition from any EF Core DbContext using provider-agnostic relational metadata.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup Label="Package References">

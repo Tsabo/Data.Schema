@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>Provider-agnostic database schema management abstractions and models. Install a provider-specific package (Tsabo.Data.Schema.Sqlite, Tsabo.Data.Schema.SqlServer, Tsabo.Data.Schema.Postgres) to get started.</Description>
+    <IsAotCompatible>true</IsAotCompatible>
   </PropertyGroup>
 
   <ItemGroup Label="Package References">
