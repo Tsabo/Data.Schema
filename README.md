@@ -1,5 +1,9 @@
 # Tsabo.Data.Schema
 
+[![CI](https://github.com/Tsabo/Tsabo.Data.Schema/actions/workflows/ci.yml/badge.svg)](https://github.com/Tsabo/Tsabo.Data.Schema/actions/workflows/ci.yml)
+[![NuGet](https://img.shields.io/nuget/v/Tsabo.Data.Schema.svg)](https://www.nuget.org/packages/Tsabo.Data.Schema)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Schema-first database management for .NET — define what your schema should look like, apply the diff.
 
 ## The Problem
