@@ -12,7 +12,19 @@ CI publishes and runs this natively on every push/PR (`.github/workflows/ci.yml`
 which needs no extra setup on `ubuntu-latest`). Publishing natively on Windows additionally
 requires the "Desktop development with C++" workload (Native AOT needs a platform linker) — see
 https://aka.ms/nativeaot-prerequisites; without it, `dotnet publish` fails at the final link step
-even though the AOT/IL compilation itself succeeds.
+even though the AOT/IL compilation itself succeeds. Cross-OS native compilation isn't supported
+(you can't produce a `linux-x64` native binary from a Windows host), so to reproduce a `linux-x64`
+publish failure locally on Windows, use a Linux container instead:
+
+```
+docker run --rm -v "<repo path>:/repo" -w /repo mcr.microsoft.com/dotnet/sdk:10.0 bash -c \
+  "apt-get update -qq && apt-get install -y -qq clang zlib1g-dev >/dev/null && \
+   dotnet publish Source/samples/Tsabo.Data.Schema.AotSample/Tsabo.Data.Schema.AotSample.csproj -c Release -r linux-x64 && \
+   ./Source/samples/Tsabo.Data.Schema.AotSample/bin/Release/net10.0/linux-x64/publish/Tsabo.Data.Schema.AotSample"
+```
+
+(the plain `mcr.microsoft.com/dotnet/sdk` image doesn't ship a linker, unlike `ubuntu-latest`
+GitHub-hosted runners, hence installing `clang` first.)
 
 What it exercises:
 - JSON round-trip through `SchemaSerializer`, backed by the source-generated `SchemaJsonContext`.
@@ -38,3 +50,14 @@ under Native AOT, the consumer must supply a design-time compiled model (`dotnet
 optimize`) and register it via `DbContextOptionsBuilder.UseModel(...)` — see
 https://aka.ms/efcore-docs-compiled-models. Wiring that up is out of scope for this sample since
 it's specific to each consumer's own DbContext and entity model, not to Tsabo.Data.Schema.
+
+**`Microsoft.Data.SqlClient`'s Unix runtime asset isn't fully trim-clean**, which is why the project
+sets `<IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>`. On `linux-x64`/`osx-x64`, ILC
+reports `IL2104`/`IL3053` against `Microsoft.Data.SqlClient`, `Microsoft.Data.SqlClient.Internal.Logging`,
+and `System.Configuration.ConfigurationManager` during native codegen (not present on `win-x64`,
+which uses a different, native-SNI-backed runtime asset with no such warnings). Verified by actually
+publishing and running this sample natively on `linux-x64`: the SQL Server scenario still reaches an
+ordinary `SqlException` at the expected point, so the warnings are coming from internal code paths
+this app never exercises (most likely Kerberos/Windows-integrated-auth config reading), not from
+`SqlConnection`/`SqlCommand` usage. Without the property, those warnings fail the ILC build outright.
+See https://aka.ms/il2104.

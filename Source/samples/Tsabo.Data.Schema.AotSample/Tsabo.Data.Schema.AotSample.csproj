@@ -4,6 +4,15 @@
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
     <PublishAot>true</PublishAot>
+    <!--
+      Microsoft.Data.SqlClient's Unix runtime asset (and its System.Configuration.ConfigurationManager
+      dependency) produces IL2104/IL3053 trim/AOT warnings during ILC codegen on Linux/macOS. These come
+      from internal code paths this app never exercises (e.g. Kerberos/Windows-integrated auth config
+      reading), not from SqlConnection/SqlCommand usage - verified by actually publishing and running
+      this sample natively on linux-x64, where the SqlServer scenario reaches a normal SqlException.
+      Without this, ILC treats those warnings as build errors. See https://aka.ms/il2104.
+    -->
+    <IlcTreatWarningsAsErrors>false</IlcTreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup Label="Package References">
